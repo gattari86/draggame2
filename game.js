@@ -3,14 +3,6 @@ const ctx = canvas.getContext("2d")
 const scoreElement = document.getElementById("score")
 const gestureElement = document.getElementById("gesture")
 
-function resizeCanvas() {
-  canvas.width = Math.min(window.innerWidth * 0.9, 800)
-  canvas.height = Math.min(window.innerHeight * 0.7, 400)
-}
-
-resizeCanvas()
-window.addEventListener("resize", resizeCanvas)
-
 let score = 0
 let gameOver = false
 let touchStartY = 0
@@ -30,23 +22,28 @@ const player = {
 
 const GRAVITY = 0.6
 const JUMP_FORCE = -15
-const GROUND_Y = canvas.height - player.height
-player.y = GROUND_Y
+let GROUND_Y
 
 let accessories = []
 let powerUps = []
 let obstacles = []
 
+function resizeCanvas() {
+  canvas.width = Math.min(window.innerWidth * 0.9, 800)
+  canvas.height = Math.min(window.innerHeight * 0.7, 400)
+  GROUND_Y = canvas.height - player.height
+  player.y = GROUND_Y
+}
+
 function drawPlayer() {
   ctx.fillStyle = player.isTwirling ? "purple" : player.color
   ctx.fillRect(player.x, player.y, player.width, player.height)
 
-  // Draw face
   ctx.fillStyle = "white"
-  ctx.fillRect(player.x + 10, player.y + 15, 5, 5) // Left eye
-  ctx.fillRect(player.x + 25, player.y + 15, 5, 5) // Right eye
+  ctx.fillRect(player.x + 10, player.y + 15, 5, 5)
+  ctx.fillRect(player.x + 25, player.y + 15, 5, 5)
   ctx.fillStyle = "red"
-  ctx.fillRect(player.x + 15, player.y + 30, 10, 3) // Mouth
+  ctx.fillRect(player.x + 15, player.y + 30, 10, 3)
 }
 
 function spawnAccessory() {
@@ -209,17 +206,24 @@ function gameLoop() {
   requestAnimationFrame(gameLoop)
 }
 
+function startGame() {
+  gameOver = false
+  score = 0
+  accessories = []
+  powerUps = []
+  obstacles = []
+  player.y = GROUND_Y
+  player.velocityY = 0
+  player.isJumping = false
+  player.isSplitting = false
+  player.isTwirling = false
+  gameLoop()
+}
+
 canvas.addEventListener("touchstart", (e) => {
   e.preventDefault()
   if (gameOver) {
-    gameOver = false
-    score = 0
-    accessories = []
-    powerUps = []
-    obstacles = []
-    player.y = GROUND_Y
-    player.velocityY = 0
-    gameLoop()
+    startGame()
     return
   }
 
@@ -243,5 +247,7 @@ canvas.addEventListener("touchmove", (e) => {
   touchStartY = null
 })
 
-gameLoop()
+window.addEventListener("resize", resizeCanvas)
+resizeCanvas()
+startGame()
 

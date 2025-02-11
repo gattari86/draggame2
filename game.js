@@ -2,10 +2,6 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreElement = document.getElementById('score');
 const gestureElement = document.getElementById('gesture');
-const bgMusic = document.getElementById('bgMusic');
-const jumpSound = document.getElementById('jumpSound');
-const splitSound = document.getElementById('splitSound');
-const twirlSound = document.getElementById('twirlSound');
 
 function resizeCanvas() {
     canvas.width = canvas.offsetWidth;
@@ -13,7 +9,6 @@ function resizeCanvas() {
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
-document.body.addEventListener('click', () => bgMusic.play(), { once: true });
 
 let score = 0;
 let touchStartY = 0;
@@ -35,7 +30,6 @@ function jump() {
     if (!player.isJumping && !player.isSplitting) {
         player.velocityY = jumpForce;
         player.isJumping = true;
-        jumpSound.play();
     }
 }
 function split() {
@@ -44,14 +38,12 @@ function split() {
         player.height = 60;
         player.y = groundY + 60;
         setTimeout(() => { player.isSplitting = false; player.height = 120; player.y = groundY; }, 1000);
-        splitSound.play();
     }
 }
 function twirl() {
     if (!player.isTwirling) {
         player.isTwirling = true;
         setTimeout(() => { player.isTwirling = false; }, 1000);
-        twirlSound.play();
     }
 }
 

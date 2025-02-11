@@ -2,21 +2,104 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Drag Queen Runway Chase</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poppy Marketing Newsletter Signup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 300px;
+        }
+        h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background: #ff6347;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #ff483d;
+        }
+        .success {
+            display: none;
+            color: green;
+            margin-top: 10px;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
-        <div id="score">Score: 0</div>
-        <div id="gesture"></div>
+
+    <div class="container">
+        <h2>Sign Up for Poppy Marketing Updates!</h2>
+        <form id="newsletterForm">
+            <input type="text" id="name" placeholder="Your Name" required>
+            <input type="email" id="email" placeholder="Your Email" required>
+            <button type="submit">Subscribe</button>
+            <p class="success">Thanks for signing up! 🎉</p>
+            <p class="error"></p>
+        </form>
     </div>
-    <div id="instructions">
-        Swipe up to JUMP, down to SPLIT, double-tap to TWIRL.<br>
-        Collect accessories (pink) for points and power-ups (gold) for special effects!
-    </div>
-    <script src="game.js"></script>
+
+    <script>
+        document.getElementById('newsletterForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            let name = document.getElementById('name').value.trim();
+            let email = document.getElementById('email').value.trim();
+            let errorText = document.querySelector('.error');
+            let successText = document.querySelector('.success');
+
+            // Basic validation
+            if (name === "" || email === "") {
+                errorText.textContent = "Please enter your name and email.";
+                return;
+            }
+
+            // Email format validation
+            let emailPattern = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
+            if (!email.match(emailPattern)) {
+                errorText.textContent = "Please enter a valid email address.";
+                return;
+            }
+
+            // If valid, show success message
+            errorText.textContent = "";
+            successText.style.display = "block";
+
+            // Optional: Send data to backend or email marketing tool
+            console.log("Name:", name);
+            console.log("Email:", email);
+        });
+    </script>
+
 </body>
 </html>
-

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Drag Queen Runway Chase</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #000;
+            touch-action: none;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+        }
+        #gameCanvas {
+            width: 100%;
+            background: #1a1a1a;
+            touch-action: none;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            color: #ff69b4;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        #gesture {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="score">Score: 0</div>
+        <div id="gesture"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const gestureElement = document.getElementById('gesture');
+
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = window.innerHeight * 0.8;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Game state
+        let score = 0;
+        let touchStartY = 0;
+        let walkFrame = 0;
+        let frameCount = 0;
+        let isSplitting = false;
+        let splitTimer = 0;
+
+        const player = {
+            x: 80,
+            y: 0,
+            width: 60,
+            height: 120,
+            velocityY: 0,
+            isJumping: false,
+            isSplitting: false
+        };
+
+        const stage = {
+            spotlights: [],
+            curtains: []
+        };
+
+        // Initialize stage elements
+        for (let i = 0; i < 5; i++) {
+            stage.spotlights.push({
+                x: Math.random() * canvas.width,
+                radius: 100,
+                color: `rgba(255,${Math.random() * 255},${Math.random() * 255},0.2)`
+            });
+        }
+
+        const accessories = [];
+        const gravity = 0.5;
+        const jumpForce = -15;
+        const groundY = canvas.height - player.height;
+        player.y = groundY;
+
+        // Accessory types with RuPaul-inspired items
+        const accessoryTypes = [
+            { name: 'crown', color: '#FFD700', width: 40, height: 30, points: 50 },
+            { name: 'wig', color: '#FF69B4', width: 45, height: 40, points: 40 },
+            { name: 'heels', color: '#FF0000', width: 30, height: 40, points: 30 },
+            { name: 'makeup', color: '#FF1493', width: 25, height: 35, points: 20 },
+            { name: 'trophy', color: '#DAA520', width: 35, height: 45, points: 100 }
+        ];
+
+        // Touch controls
+        let touchStart = null;
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchStart = e.touches[0].clientY;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!touchStart) return;
+
+            const touchEnd = e.touches[0].clientY;
+            const diff = touchStart - touchEnd;
+
+            if (diff > 50) { // Swipe up
+                jump();
+                gestureElement.textContent = "JUMP!";
+            } else if (diff < -50) { // Swipe down
+                split();
+                gestureElement.textContent = "SPLIT!";
+            }
+
+            touchStart = null;
+        });
+
+        canvas.addEventListener('touchend', () => {
+            touchStart = null;
+            gestureElement.textContent = "";
+        });
+
+        function jump() {
+            if (!player.isJumping && !player.isSplitting) {
+                player.velocityY = jumpForce;
+                player.isJumping = true;
+            }
+        }
+
+        function split() {
+            if (!player.isJumping && !player.isSplitting) {
+                player.isSplitting = true;
+                player.height = 60;
+                player.y = groundY + 60;
+                splitTimer = 0;
+            }
+        }
+
+        // Draw RuPaul-inspired character
+        function drawPlayer() {
+            ctx.save();
+            const baseX = player.x;
+            const baseY = player.y;
+
+            // Body
+            ctx.fillStyle = '#FF69B4';
+            ctx.fillRect(baseX, baseY, player.width, player.height);
+
+            if (!player.isSplitting) {
+                // Dress
+                ctx.beginPath();
+                ctx.moveTo(baseX, baseY + player.height * 0.4);
+                ctx.lineTo(baseX + player.width, baseY + player.height * 0.4);
+                ctx.lineTo(baseX + player.width * 1.2, baseY + player.height);
+                ctx.lineTo(baseX - player.width * 0.2, baseY + player.height);
+                ctx.closePath();
+                ctx.fillStyle = '#FF1493';
+                ctx.fill();
+            }
+
+            // Hair
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.ellipse(baseX + player.width/2, baseY - 10, 
+                       player.width * 0.7, player.height * 0.25, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Face
+            ctx.fillStyle = '#FFE4C4';
+            ctx.beginPath();
+            ctx.ellipse(baseX + player.width/2, baseY + player.height * 0.15,
+                       player.width * 0.3, player.height * 0.15, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Makeup
+            ctx.fillStyle = '#FF1493';
+            ctx.beginPath();
+            ctx.ellipse(baseX + player.width * 0.35, baseY + player.height * 0.15,
+                       5, 3, 0, 0, Math.PI * 2);
+            ctx.ellipse(baseX + player.width * 0.65, baseY + player.height * 0.15,
+                       5, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Draw stage elements
+        function drawStage() {
+            // Stage floor
+            ctx.fillStyle = '#4a4a4a';
+            ctx.fillRect(0, groundY + player.height, canvas.width, 50);
+
+            // Spotlights
+            stage.spotlights.forEach(spot => {
+                const gradient = ctx.createRadialGradient(
+                    spot.x, 0, 0,
+                    spot.x, 0, spot.radius
+                );
+                gradient.addColorStop(0, spot.color);
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            });
+
+            // Stage curtains
+            ctx.fillStyle = '#8B0000';
+            ctx.fillRect(0, 0, 20, canvas.height);
+            ctx.fillRect(canvas.width - 20, 0, 20, canvas.height);
+        }
+
+        function spawnAccessory() {
+            const type = accessoryTypes[Math.floor(Math.random() * accessoryTypes.length)];
+            accessories.push({
+                x: canvas.width,
+                y: Math.random() * (groundY - 100),
+                width: type.width,
+                height: type.height,
+                color: type.color,
+                points: type.points,
+                speed: 4 + Math.random() * 2
+            });
+        }
+
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        // Game loop
+        let lastTime = 0;
+        let accessoryTimer = 0;
+
+        function gameLoop(timestamp) {
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawStage();
+
+            // Update player
+            if (!player.isSplitting) {
+                player.velocityY += gravity;
+                player.y += player.velocityY;
+
+                if (player.y > groundY) {
+                    player.y = groundY;
+                    player.velocityY = 0;
+                    player.isJumping = false;
+                }
+            } else {
+                splitTimer += deltaTime;
+                if (splitTimer > 1000) {
+                    player.isSplitting = false;
+                    player.height = 120;
+                    player.y = groundY;
+                }
+            }
+
+            // Spawn accessories
+            accessoryTimer += deltaTime;
+            if (accessoryTimer > 2000) {
+                spawnAccessory();
+                accessoryTimer = 0;
+            }
+
+            // Update accessories
+            for (let i = accessories.length - 1; i >= 0; i--) {
+                const acc = accessories[i];
+                acc.x -= acc.speed;
+
+                if (checkCollision(player, acc)) {
+                    score += acc.points;
+                    scoreElement.textContent = `Score: ${score}`;
+                    accessories.splice(i, 1);
+                    continue;
+                }
+
+                if (acc.x + acc.width < 0) {
+                    accessories.splice(i, 1);
+                }
+
+                ctx.fillStyle = acc.color;
+                ctx.fillRect(acc.x, acc.y, acc.width, acc.height);
+            }
+
+            // Move spotlights
+            stage.spotlights.forEach(spot => {
+                spot.x -= 1;
+                if (spot.x < -spot.radius) {
+                    spot.x = canvas.width + spot.radius;
+                }
+            });
+
+            drawPlayer();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start game
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreElement = document.getElementById('score');
+const gestureElement = document.getElementById('gesture');
+const bgMusic = document.getElementById('bgMusic');
+const jumpSound = document.getElementById('jumpSound');
+const splitSound = document.getElementById('splitSound');
+const twirlSound = document.getElementById('twirlSound');
+
+function resizeCanvas() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = window.innerHeight * 0.8;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+document.body.addEventListener('click', () => bgMusic.play(), { once: true });
+
+let score = 0;
+let touchStartY = 0;
+let touchStartX = 0;
+
+const player = { x: 80, y: 0, width: 60, height: 120, velocityY: 0, isJumping: false, isSplitting: false, isTwirling: false };
+const gravity = 0.5, jumpForce = -15, groundY = canvas.height - player.height;
+player.y = groundY;
+
+let accessories = [], powerUps = [];
+function spawnAccessory() {
+    accessories.push({ x: canvas.width, y: Math.random() * (groundY - 100), width: 30, height: 40, color: 'pink', points: 50, speed: 5 });
+}
+function spawnPowerUp() {
+    powerUps.push({ x: canvas.width, y: Math.random() * (groundY - 150), width: 35, height: 45, color: 'gold', effect: 'doublePoints', speed: 4 });
+}
+
+function jump() {
+    if (!player.isJumping && !player.isSplitting) {
+        player.velocityY = jumpForce;
+        player.isJumping = true;
+        jumpSound.play();
+    }
+}
+function split() {
+    if (!player.isJumping && !player.isSplitting) {
+        player.isSplitting = true;
+        player.height = 60;
+        player.y = groundY + 60;
+        setTimeout(() => { player.isSplitting = false; player.height = 120; player.y = groundY; }, 1000);
+        splitSound.play();
+    }
+}
+function twirl() {
+    if (!player.isTwirling) {
+        player.isTwirling = true;
+        setTimeout(() => { player.isTwirling = false; }, 1000);
+        twirlSound.play();
+    }
+}
+
+let lastTap = 0;
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    let now = new Date().getTime();
+    if (now - lastTap < 300) {
+        twirl();
+        gestureElement.textContent = "TWIRL!";
+    } else {
+        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+    }
+    lastTap = now;
+});
+
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const touchEndY = e.touches[0].clientY;
+    if (touchStartY - touchEndY > 50) { jump(); gestureElement.textContent = "JUMP!"; }
+    else if (touchEndY - touchStartY > 50) { split(); gestureElement.textContent = "SPLIT!"; }
+    touchStartY = null;
+});
+
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    player.velocityY += gravity;
+    player.y += player.velocityY;
+    if (player.y > groundY) { player.y = groundY; player.velocityY = 0; player.isJumping = false; }
+    accessories.forEach(acc => acc.x -= acc.speed);
+    powerUps.forEach(power => power.x -= power.speed);
+    scoreElement.textContent = `Score: ${score}`;
+    requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);

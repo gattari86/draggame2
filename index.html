@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -12,8 +12,13 @@
         <div id="score">Score: 0</div>
         <div id="gesture"></div>
     </div>
-    <div id="instructions">Swipe up to JUMP, down to SPLIT, double-tap to TWIRL. Collect accessories for points and power-ups for special effects!</div>
     
+    <div id="instructions">
+        🔥 Swipe up to <b>JUMP</b>, down to <b>SPLIT</b>, and double-tap to <b>TWIRL</b>.  
+        🎀 Collect accessories for points and power-ups for special effects!
+    </div>
+    
+    <!-- Audio Files -->
     <audio id="bgMusic" loop>
         <source src="assets/background.mp3" type="audio/mpeg">
     </audio>
@@ -26,7 +31,8 @@
     <audio id="twirlSound">
         <source src="assets/twirl.mp3" type="audio/mpeg">
     </audio>
-    
+
+    <!-- Game Script -->
     <script src="game.js"></script>
 </body>
 </html>

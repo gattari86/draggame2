@@ -4,8 +4,8 @@ const scoreElement = document.getElementById('score');
 const gestureElement = document.getElementById('gesture');
 
 function resizeCanvas() {
-    canvas.width = canvas.offsetWidth;
-    canvas.height = window.innerHeight * 0.8;
+    canvas.width = Math.min(window.innerWidth * 0.9, 800);
+    canvas.height = Math.min(window.innerHeight * 0.7, 500);
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
@@ -27,7 +27,7 @@ function spawnPowerUp() {
 }
 
 function drawPlayer() {
-    ctx.fillStyle = "#FF69B4"; // Hot pink for visibility
+    ctx.fillStyle = "#FF69B4";
     ctx.fillRect(player.x, player.y, player.width, player.height);
 }
 
@@ -77,7 +77,7 @@ canvas.addEventListener('touchmove', (e) => {
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#333";
-    ctx.fillRect(0, 0, canvas.width, canvas.height); // Set visible background
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     drawPlayer();
     player.velocityY += gravity;
     player.y += player.velocityY;

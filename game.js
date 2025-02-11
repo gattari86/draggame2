@@ -26,6 +26,11 @@ function spawnPowerUp() {
     powerUps.push({ x: canvas.width, y: Math.random() * (groundY - 150), width: 35, height: 45, color: 'gold', effect: 'doublePoints', speed: 4 });
 }
 
+function drawPlayer() {
+    ctx.fillStyle = "#FF69B4"; // Hot pink for visibility
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+}
+
 function jump() {
     if (!player.isJumping && !player.isSplitting) {
         player.velocityY = jumpForce;
@@ -71,11 +76,22 @@ canvas.addEventListener('touchmove', (e) => {
 
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#333";
+    ctx.fillRect(0, 0, canvas.width, canvas.height); // Set visible background
+    drawPlayer();
     player.velocityY += gravity;
     player.y += player.velocityY;
     if (player.y > groundY) { player.y = groundY; player.velocityY = 0; player.isJumping = false; }
-    accessories.forEach(acc => acc.x -= acc.speed);
-    powerUps.forEach(power => power.x -= power.speed);
+    accessories.forEach(acc => {
+        acc.x -= acc.speed;
+        ctx.fillStyle = acc.color;
+        ctx.fillRect(acc.x, acc.y, acc.width, acc.height);
+    });
+    powerUps.forEach(power => {
+        power.x -= power.speed;
+        ctx.fillStyle = power.color;
+        ctx.fillRect(power.x, power.y, power.width, power.height);
+    });
     scoreElement.textContent = `Score: ${score}`;
     requestAnimationFrame(gameLoop);
 }

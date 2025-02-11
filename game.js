@@ -1,293 +1,237 @@
-const canvas = document.getElementById("gameCanvas")
-const ctx = canvas.getContext("2d")
-const scoreElement = document.getElementById("score")
-const gestureElement = document.getElementById("gesture")
-const loadingScreen = document.getElementById("loadingScreen")
-const gameContainer = document.getElementById("gameContainer")
-const instructionsElement = document.getElementById("instructions")
-const gameOverScreen = document.getElementById("gameOver")
-const finalScoreElement = document.getElementById("finalScore")
-const restartButton = document.getElementById("restartButton")
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-let gameStarted = false
-let gameOver = false
+// Set canvas size
+canvas.width = 800;
+canvas.height = 400;
 
-function resizeCanvas() {
-  canvas.width = Math.min(window.innerWidth * 0.9, 800)
-  canvas.height = Math.min(window.innerHeight * 0.7, 500)
-  groundY = canvas.height - player.height
-  player.y = groundY
-}
+// Game variables
+let score = 0;
+let gameOver = false;
+let touchStartY = 0;
+let lastTap = 0;
 
-resizeCanvas()
-window.addEventListener("resize", resizeCanvas)
-
-let score = 0
-let touchStartY = 0
-let touchStartX = 0
-
+// Player
 const player = {
-  x: 80,
-  y: 0,
-  width: 60,
-  height: 120,
-  velocityY: 0,
-  isJumping: false,
-  isSplitting: false,
-  isTwirling: false,
+    x: 50,
+    y: 300,
+    width: 40,
+    height: 80,
+    color: '#FF69B4',
+    velocityY: 0,
+    isJumping: false,
+    isSplitting: false,
+    isTwirling: false
+};
+
+// Game elements
+let accessories = [];
+let powerUps = [];
+let obstacles = [];
+
+// Game constants
+const GRAVITY = 0.6;
+const JUMP_FORCE = -15;
+const GROUND_Y = canvas.height - player.height;
+
+function drawPlayer() {
+    ctx.fillStyle = player.isTwirling ? 'purple' : player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+    
+    // Draw face
+    ctx.fillStyle = 'white';
+    ctx.fillRect(player.x + 10, player.y + 15, 5, 5); // Left eye
+    ctx.fillRect(player.x + 25, player.y + 15, 5, 5); // Right eye
+    ctx.fillStyle = 'red';
+    ctx.fillRect(player.x + 15, player.y + 30, 10, 3); // Mouth
 }
-
-const gravity = 0.5,
-  jumpForce = -15
-let groundY = canvas.height - player.height
-player.y = groundY
-
-let accessories = [],
-  powerUps = [],
-  obstacles = []
 
 function spawnAccessory() {
-  accessories.push({
-    x: canvas.width,
-    y: Math.random() * (groundY - 100),
-    width: 30,
-    height: 40,
-    color: "pink",
-    points: 50,
-    speed: 5,
-  })
+    accessories.push({
+        x: canvas.width,
+        y: Math.random() * (GROUND_Y - 50),
+        width: 20,
+        height: 20,
+        color: 'pink'
+    });
 }
 
 function spawnPowerUp() {
-  powerUps.push({
-    x: canvas.width,
-    y: Math.random() * (groundY - 150),
-    width: 35,
-    height: 45,
-    color: "gold",
-    effect: "doublePoints",
-    speed: 4,
-  })
+    powerUps.push({
+        x: canvas.width,
+        y: Math.random() * (GROUND_Y - 50),
+        width: 25,
+        height: 25,
+        color: 'gold'
+    });
 }
 
 function spawnObstacle() {
-  obstacles.push({
-    x: canvas.width,
-    y: groundY - 50,
-    width: 40,
-    height: 50,
-    color: "red",
-    speed: 6,
-  })
-}
-
-function drawPlayer() {
-  ctx.fillStyle = player.isTwirling ? "purple" : "#FF69B4"
-  ctx.fillRect(player.x, player.y, player.width, player.height)
-
-  // Draw face
-  ctx.fillStyle = "white"
-  ctx.fillRect(player.x + 15, player.y + 20, 10, 10) // Left eye
-  ctx.fillRect(player.x + 35, player.y + 20, 10, 10) // Right eye
-  ctx.fillStyle = "red"
-  ctx.fillRect(player.x + 20, player.y + 50, 20, 5) // Mouth
+    obstacles.push({
+        x: canvas.width,
+        y: GROUND_Y - 30,
+        width: 30,
+        height: 30,
+        color: 'red'
+    });
 }
 
 function jump() {
-  if (!player.isJumping && !player.isSplitting) {
-    player.velocityY = jumpForce
-    player.isJumping = true
-  }
+    if (!player.isJumping && !player.isSplitting) {
+        player.velocityY = JUMP_FORCE;
+        player.isJumping = true;
+    }
 }
 
 function split() {
-  if (!player.isJumping && !player.isSplitting) {
-    player.isSplitting = true
-    player.height = 60
-    player.y = groundY + 60
-    setTimeout(() => {
-      player.isSplitting = false
-      player.height = 120
-      player.y = groundY
-    }, 1000)
-  }
+    if (!player.isJumping && !player.isSplitting) {
+        player.isSplitting = true;
+        player.height = 40;
+        player.y = GROUND_Y + 40;
+        setTimeout(() => {
+            player.isSplitting = false;
+            player.height = 80;
+            player.y = GROUND_Y;
+        }, 1000);
+    }
 }
 
 function twirl() {
-  if (!player.isTwirling) {
-    player.isTwirling = true
-    setTimeout(() => {
-      player.isTwirling = false
-    }, 1000)
-  }
-}
-
-let lastTap = 0
-canvas.addEventListener("touchstart", (e) => {
-  e.preventDefault()
-  if (!gameStarted) {
-    startGame()
-    return
-  }
-  const now = new Date().getTime()
-  if (now - lastTap < 300) {
-    twirl()
-    showGesture("TWIRL!")
-  } else {
-    touchStartY = e.touches[0].clientY
-    touchStartX = e.touches[0].clientX
-  }
-  lastTap = now
-})
-
-canvas.addEventListener("touchmove", (e) => {
-  e.preventDefault()
-  const touchEndY = e.touches[0].clientY
-  if (touchStartY - touchEndY > 50) {
-    jump()
-    showGesture("JUMP!")
-  } else if (touchEndY - touchStartY > 50) {
-    split()
-    showGesture("SPLIT!")
-  }
-  touchStartY = null
-})
-
-function showGesture(text) {
-  gestureElement.textContent = text
-  gestureElement.style.opacity = 1
-  setTimeout(() => {
-    gestureElement.style.opacity = 0
-  }, 1000)
+    if (!player.isTwirling) {
+        player.isTwirling = true;
+        setTimeout(() => { player.isTwirling = false; }, 1000);
+    }
 }
 
 function checkCollisions() {
-  accessories = accessories.filter((acc) => {
-    if (
-      player.x < acc.x + acc.width &&
-      player.x + player.width > acc.x &&
-      player.y < acc.y + acc.height &&
-      player.y + player.height > acc.y
-    ) {
-      score += acc.points
-      return false
-    }
-    return true
-  })
+    accessories = accessories.filter(acc => {
+        if (player.x < acc.x + acc.width &&
+            player.x + player.width > acc.x &&
+            player.y < acc.y + acc.height &&
+            player.y + player.height > acc.y) {
+            score += 10;
+            return false;
+        }
+        return true;
+    });
 
-  powerUps = powerUps.filter((power) => {
-    if (
-      player.x < power.x + power.width &&
-      player.x + player.width > power.x &&
-      player.y < power.y + power.height &&
-      player.y + player.height > power.y
-    ) {
-      applyPowerUp(power.effect)
-      return false
-    }
-    return true
-  })
+    powerUps = powerUps.filter(power => {
+        if (player.x < power.x + power.width &&
+            player.x + player.width > power.x &&
+            player.y < power.y + power.height &&
+            player.y + player.height > power.y) {
+            score *= 2;
+            return false;
+        }
+        return true;
+    });
 
-  obstacles.forEach((obs) => {
-    if (
-      player.x < obs.x + obs.width &&
-      player.x + player.width > obs.x &&
-      player.y < obs.y + obs.height &&
-      player.y + player.height > obs.y
-    ) {
-      endGame()
-    }
-  })
-}
-
-function applyPowerUp(effect) {
-  if (effect === "doublePoints") {
-    score *= 2
-    showGesture("DOUBLE POINTS!")
-  }
+    obstacles.forEach(obs => {
+        if (player.x < obs.x + obs.width &&
+            player.x + player.width > obs.x &&
+            player.y < obs.y + obs.height &&
+            player.y + player.height > obs.y) {
+            gameOver = true;
+        }
+    });
 }
 
 function gameLoop() {
-  if (gameOver) return
+    if (gameOver) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '30px Arial';
+        ctx.fillText('Game Over! Score: ' + score, canvas.width / 2 - 100, canvas.height / 2);
+        ctx.font = '20px Arial';
+        ctx.fillText('Tap to restart', canvas.width / 2 - 50, canvas.height / 2 + 40);
+        return;
+    }
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw background
-  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
-  gradient.addColorStop(0, "#87CEEB")
-  gradient.addColorStop(1, "#E0F6FF")
-  ctx.fillStyle = gradient
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
+    // Draw background
+    ctx.fillStyle = '#87CEEB';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  drawPlayer()
+    // Update player
+    player.velocityY += GRAVITY;
+    player.y += player.velocityY;
+    if (player.y > GROUND_Y) {
+        player.y = GROUND_Y;
+        player.velocityY = 0;
+        player.isJumping = false;
+    }
 
-  player.velocityY += gravity
-  player.y += player.velocityY
-  if (player.y > groundY) {
-    player.y = groundY
-    player.velocityY = 0
-    player.isJumping = false
-  }
-  // Move and draw game elements
-  ;[accessories, powerUps, obstacles].forEach((elements) => {
-    elements.forEach((el) => {
-      el.x -= el.speed
-      ctx.fillStyle = el.color
-      ctx.fillRect(el.x, el.y, el.width, el.height)
-    })
-  })
+    // Draw player
+    drawPlayer();
 
-  checkCollisions()
+    // Update and draw game elements
+    [accessories, powerUps, obstacles].forEach(elements => {
+        elements.forEach(el => {
+            el.x -= 5;
+            ctx.fillStyle = el.color;
+            ctx.fillRect(el.x, el.y, el.width, el.height);
+        });
+    });
 
-  // Spawn new elements
-  if (Math.random() < 0.02) spawnAccessory()
-  if (Math.random() < 0.01) spawnPowerUp()
-  if (Math.random() < 0.015) spawnObstacle()
+    // Check collisions
+    checkCollisions();
 
-  // Remove off-screen elements
-  accessories = accessories.filter((acc) => acc.x + acc.width > 0)
-  powerUps = powerUps.filter((power) => power.x + power.width > 0)
-  obstacles = obstacles.filter((obs) => obs.x + obs.width > 0)
+    // Spawn new elements
+    if (Math.random() < 0.02) spawnAccessory();
+    if (Math.random() < 0.01) spawnPowerUp();
+    if (Math.random() < 0.015) spawnObstacle();
 
-  scoreElement.textContent = `Score: ${score}`
-  requestAnimationFrame(gameLoop)
+    // Remove off-screen elements
+    accessories = accessories.filter(acc => acc.x + acc.width > 0);
+    powerUps = powerUps.filter(power => power.x + power.width > 0);
+    obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+
+    // Draw score
+    ctx.fillStyle = 'white';
+    ctx.font = '20px Arial';
+    ctx.fillText('Score: ' + score, 10, 30);
+
+    requestAnimationFrame(gameLoop);
 }
 
-function startGame() {
-  gameStarted = true
-  gameOver = false
-  loadingScreen.classList.add("hidden")
-  gameContainer.classList.remove("hidden")
-  instructionsElement.classList.remove("hidden")
-  gameOverScreen.classList.add("hidden")
-  score = 0
-  accessories = []
-  powerUps = []
-  obstacles = []
-  player.y = groundY
-  player.velocityY = 0
-  player.isJumping = false
-  player.isSplitting = false
-  player.isTwirling = false
-  requestAnimationFrame(gameLoop)
-}
+// Event listeners
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (gameOver) {
+        gameOver = false;
+        score = 0;
+        accessories = [];
+        powerUps = [];
+        obstacles = [];
+        player.y = GROUND_Y;
+        player.velocityY = 0;
+        gameLoop();
+        return;
+    }
 
-function endGame() {
-  gameOver = true
-  gameOverScreen.classList.remove("hidden")
-  finalScoreElement.textContent = score
-}
+    let now = new Date().getTime();
+    if (now - lastTap < 300) {
+        twirl();
+    } else {
+        touchStartY = e.touches[0].clientY;
+    }
+    lastTap = now;
+});
 
-restartButton.addEventListener("click", startGame)
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const touchEndY = e.touches[0].clientY;
+    if (touchStartY - touchEndY > 50) {
+        jump();
+    } else if (touchEndY - touchStartY > 50) {
+        split();
+    }
+    touchStartY = null;
+});
 
-// Initial game setup
-window.addEventListener("load", () => {
-  setTimeout(() => {
-    loadingScreen.classList.add("hidden")
-    gameContainer.classList.remove("hidden")
-    instructionsElement.classList.remove("hidden")
-  }, 2000) // Simulating loading time
-})
-
-canvas.addEventListener("click", startGame)
+// Start the game
+gameLoop();
 

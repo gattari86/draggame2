@@ -26,7 +26,7 @@ body {
 #gameCanvas {
     width: 100%;
     height: 500px;
-    background: #1a1a1a;
+    background: #333; /* Updated to a visible shade */
     touch-action: none;
     display: block;
     margin: auto;

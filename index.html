@@ -3,22 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Drag Queen Runway Chase - A fabulous mobile game!">
     <title>Drag Queen Runway Chase</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="gameContainer">
+    <div id="loadingScreen" class="fullscreen">
+        <div class="loading-content">
+            <h1>Drag Queen Runway Chase</h1>
+            <div class="spinner"></div>
+            <p>Preparing the runway...</p>
+        </div>
+    </div>
+
+    <div id="gameContainer" class="hidden">
         <canvas id="gameCanvas"></canvas>
         <div id="score">Score: 0</div>
         <div id="gesture"></div>
     </div>
     
-    <div id="instructions">
-        🔥 Swipe up to <b>JUMP</b>, down to <b>SPLIT</b>, and double-tap to <b>TWIRL</b>.  
+    <div id="instructions" class="hidden">
+        🔥 Swipe up to <b>JUMP</b>, down to <b>SPLIT</b>, and double-tap to <b>TWIRL</b>.<br>
         🎀 Collect accessories for points and power-ups for special effects!
     </div>
     
-    <!-- Game Script -->
+    <div id="gameOver" class="fullscreen hidden">
+        <div class="game-over-content">
+            <h2>Sashay Away!</h2>
+            <p>Your final score: <span id="finalScore"></span></p>
+            <button id="restartButton">Play Again</button>
+        </div>
+    </div>
+
     <script src="game.js"></script>
 </body>
 </html>
+

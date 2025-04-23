@@ -1,704 +1,98 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animated Blur Art Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-      @font-face {
-        font-family: 'LucideIcons';
-        src: url(https://cdn.jsdelivr.net/npm/lucide-static@latest/font/Lucide.ttf) format('truetype');
-      }
-      .lucide {
-        font-family: 'LucideIcons';
-        font-size: 1.25rem; /* Adjust size as needed */
-        line-height: 1;
-        vertical-align: middle;
-      }
-      body {
-        font-family: 'Inter', sans-serif;
-        background-color: #f3f4f6; /* Tailwind gray-100 */
-        margin: 0;
-        height: 100vh;
-        overflow: hidden;
-      }
-      /* Remove background from canvas style - will be drawn dynamically */
-      canvas {
-        display: block;
-        width: 100%;
-        height: 100%;
-        border-radius: 0.5rem; /* rounded-lg */
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
-      }
-      input[type="range"] { appearance: none; width: 100%; height: 8px; background: #d1d5db; border-radius: 9999px; outline: none; opacity: 0.7; transition: opacity .2s; cursor: pointer; }
-      input[type="range"]:hover { opacity: 1; }
-      input[type="range"]::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; background: #4f46e5; border-radius: 50%; cursor: pointer; }
-      input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; background: #4f46e5; border-radius: 50%; cursor: pointer; border: none; }
-      input[type="color"] { appearance: none; -moz-appearance: none; -webkit-appearance: none; width: 40px; height: 40px; background: none; border: none; padding: 0; border-radius: 50%; cursor: pointer; border: 2px solid #d1d5db; overflow: hidden; }
-      input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-      input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
-      input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
-      button:disabled { opacity: 0.5; cursor: not-allowed; }
-      .recording-indicator { width: 10px; height: 10px; background-color: red; border-radius: 50%; display: inline-block; margin-left: 8px; animation: pulse 1.5s infinite; }
-      @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-      .hidden { display: none; }
-      /* Styling for gradient options */
-      .gradient-options { border: 1px solid #e5e7eb; border-radius: 0.375rem; padding: 0.5rem; margin-top: 0.5rem; }
-      .gradient-colors { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
-    </style>
-</head>
-<body class="flex flex-col lg:flex-row h-screen p-4 gap-4 bg-gray-100">
-
-    <div class="w-full lg:w-1/4 bg-white p-6 rounded-lg shadow-lg flex flex-col gap-5 overflow-y-auto">
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">Animated Blur Art</h1>
-
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Background</label>
-            <div class="flex gap-4">
-                <label class="inline-flex items-center">
-                    <input type="radio" class="form-radio text-indigo-600" name="backgroundType" value="solid" checked>
-                    <span class="ml-2">Solid</span>
-                </label>
-                <label class="inline-flex items-center">
-                    <input type="radio" class="form-radio text-indigo-600" name="backgroundType" value="linear">
-                    <span class="ml-2">Linear</span>
-                </label>
-                <label class="inline-flex items-center">
-                    <input type="radio" class="form-radio text-indigo-600" name="backgroundType" value="radial">
-                    <span class="ml-2">Radial</span>
-                </label>
-            </div>
-            <div id="solidColorOption">
-                <label for="bgColor1" class="block text-xs font-medium text-gray-500 mt-2">Color</label>
-                <input type="color" id="bgColor1" value="#FFFFFF" class="w-10 h-10">
-            </div>
-            <div id="gradientOptions" class="gradient-options hidden">
-                <label class="block text-xs font-medium text-gray-500">Gradient Colors</label>
-                <div class="gradient-colors">
-                    <input type="color" id="bgColorGradient1" value="#EEEEEE" class="w-10 h-10">
-                    <span class="text-gray-400">to</span>
-                    <input type="color" id="bgColorGradient2" value="#CCCCCC" class="w-10 h-10">
-                </div>
-            </div>
-        </div>
-
-         <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Circle Colors</label>
-            <div class="flex gap-2 flex-wrap">
-                <input type="color" id="color1" value="#FF6B6B" class="w-10 h-10 circle-color">
-                <input type="color" id="color2" value="#4ECDC4" class="w-10 h-10 circle-color">
-                <input type="color" id="color3" value="#45B7D1" class="w-10 h-10 circle-color">
-                <input type="color" id="color4" value="#FED766" class="w-10 h-10 circle-color">
-                <input type="color" id="color5" value="#F06595" class="w-10 h-10 circle-color">
-            </div>
-        </div>
-
-        <div class="space-y-1">
-            <label for="intensity" class="block text-sm font-medium text-gray-700 flex justify-between"><span>Intensity (Circles)</span><span id="intensityValue" class="font-semibold text-indigo-600">50</span></label>
-            <input type="range" id="intensity" name="intensity" min="10" max="200" value="50">
-        </div>
-        <div class="space-y-1">
-            <label for="blur" class="block text-sm font-medium text-gray-700 flex justify-between"><span>Blur Amount (px)</span><span id="blurValue" class="font-semibold text-indigo-600">15</span></label>
-            <input type="range" id="blur" name="blur" min="0" max="50" value="15">
-        </div>
-        <div class="space-y-1">
-            <label for="minRadius" class="block text-sm font-medium text-gray-700 flex justify-between"><span>Min Circle Size (%)</span><span id="minRadiusValue" class="font-semibold text-indigo-600">5</span></label>
-            <input type="range" id="minRadius" name="minRadius" min="1" max="30" value="5">
-        </div>
-        <div class="space-y-1">
-            <label for="maxRadius" class="block text-sm font-medium text-gray-700 flex justify-between"><span>Max Circle Size (%)</span><span id="maxRadiusValue" class="font-semibold text-indigo-600">25</span></label>
-            <input type="range" id="maxRadius" name="maxRadius" min="10" max="50" value="25">
-        </div>
-         <div class="space-y-1">
-            <label for="opacity" class="block text-sm font-medium text-gray-700 flex justify-between"><span>Max Opacity</span><span id="opacityValue" class="font-semibold text-indigo-600">0.7</span></label>
-            <input type="range" id="opacity" name="opacity" min="0.1" max="1.0" step="0.05" value="0.7">
-        </div>
-         <div class="space-y-1">
-            <label for="speed" class="block text-sm font-medium text-gray-700 flex justify-between"><span>Animation Speed</span><span id="speedValue" class="font-semibold text-indigo-600">1.0</span></label>
-            <input type="range" id="speed" name="speed" min="0.1" max="5.0" step="0.1" value="1.0">
-        </div>
-
-        <div class="pt-4 border-t border-gray-200 space-y-3 mt-auto">
-             <h2 class="text-lg font-semibold text-gray-700">Controls</h2>
-             <div class="grid grid-cols-3 gap-2">
-                 <button id="playBtn" class="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition disabled:opacity-50" disabled>
-                     <span class="lucide mr-1">&#xea04;</span> Play </button>
-                 <button id="pauseBtn" class="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400 transition">
-                     <span class="lucide mr-1">&#x9fa1;</span> Pause </button>
-                  <button id="regenerateBtn" class="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
-                     <span class="lucide mr-1">&#xea4c;</span> New </button>
-             </div>
-             <div id="statusMessage" class="text-sm text-center text-gray-600 h-5"></div>
-             <div class="grid grid-cols-2 gap-2">
-                  <button id="startRecordBtn" class="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition disabled:opacity-50">
-                     <span class="lucide mr-1">&#xe928;</span> Record </button>
-                  <button id="stopRecordBtn" class="inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition disabled:opacity-50" disabled>
-                     <span class="lucide mr-1">&#x9fb8;</span> Stop <span id="recordingIndicator" class="recording-indicator hidden"></span>
-                 </button>
-             </div>
-             <div class="grid grid-cols-2 gap-2">
-                 <button id="downloadPngBtn" class="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
-                     <span class="lucide mr-2">&#xe95f;</span> PNG </button>
-                 <button id="downloadWebmBtn" class="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition disabled:opacity-50">
-                     <span class="lucide mr-2">&#xea7d;</span> WEBM </button>
-            </div>
-             <p class="text-xs text-gray-500 text-center mt-1">WEBM is a video format playable on most modern devices & browsers.</p>
-
-        </div>
-    </div>
-
-    <div class="w-full lg:w-3/4 h-full flex items-center justify-center p-0 m-0">
-        <canvas id="artCanvas"></canvas>
-    </div>
-
-    <script>
-        // --- DOM Elements ---
-        const canvas = document.getElementById('artCanvas');
-        const ctx = canvas.getContext('2d');
-        // Buttons
-        const playBtn = document.getElementById('playBtn');
-        const pauseBtn = document.getElementById('pauseBtn');
-        const regenerateBtn = document.getElementById('regenerateBtn');
-        const downloadPngBtn = document.getElementById('downloadPngBtn'); // Renamed
-        const downloadWebmBtn = document.getElementById('downloadWebmBtn'); // Added
-        const startRecordBtn = document.getElementById('startRecordBtn');
-        const stopRecordBtn = document.getElementById('stopRecordBtn');
-        // Sliders & Value Displays
-        const intensitySlider = document.getElementById('intensity');
-        const intensityValue = document.getElementById('intensityValue');
-        const blurSlider = document.getElementById('blur');
-        const blurValue = document.getElementById('blurValue');
-        const minRadiusSlider = document.getElementById('minRadius');
-        const minRadiusValue = document.getElementById('minRadiusValue');
-        const maxRadiusSlider = document.getElementById('maxRadius');
-        const maxRadiusValue = document.getElementById('maxRadiusValue');
-        const opacitySlider = document.getElementById('opacity');
-        const opacityValue = document.getElementById('opacityValue');
-        const speedSlider = document.getElementById('speed');
-        const speedValue = document.getElementById('speedValue');
-        // Circle Color Inputs
-        const circleColorInputs = Array.from(document.querySelectorAll('.circle-color'));
-        // Background Controls
-        const backgroundTypeRadios = Array.from(document.querySelectorAll('input[name="backgroundType"]'));
-        const solidColorOptionDiv = document.getElementById('solidColorOption');
-        const gradientOptionsDiv = document.getElementById('gradientOptions');
-        const bgColor1Input = document.getElementById('bgColor1');
-        const bgColorGradient1Input = document.getElementById('bgColorGradient1');
-        const bgColorGradient2Input = document.getElementById('bgColorGradient2');
-        // Status/Indicators
-        const statusMessage = document.getElementById('statusMessage');
-        const recordingIndicator = document.getElementById('recordingIndicator');
-
-        // --- State Variables ---
-        let baseCircleColors = [];
-        let intensity = 50;
-        let blurAmount = 15;
-        let minRadiusPercent = 5;
-        let maxRadiusPercent = 25;
-        let maxOpacity = 0.7;
-        let speedMultiplier = 1.0;
-        let circles = [];
-        let animationFrameId = null;
-        let isPaused = false;
-        let canvasWidth = 0;
-        let canvasHeight = 0;
-        let statusTimeout = null;
-        // Background state
-        let backgroundType = 'solid'; // 'solid', 'linear', 'radial'
-        let backgroundColor1 = '#FFFFFF';
-        let backgroundColor2 = '#CCCCCC'; // Used for gradients
-
-        // --- Media Recorder State ---
-        let mediaRecorder = null;
-        let recordedChunks = [];
-        let isRecording = false;
-        const MimeType = 'video/webm;codecs=vp9'; // Using WEBM for broad compatibility
-
-        // --- Helper Functions ---
-        function getRandomFloat(min, max) { return Math.random() * (max - min) + min; }
-        function getRandomCircleColor() { return baseCircleColors.length > 0 ? baseCircleColors[Math.floor(Math.random() * baseCircleColors.length)] : '#000000'; }
-        function hexToRgba(hex, alpha) {
-            let r=0, g=0, b=0;
-            if(hex.length == 4){ r = parseInt(hex[1]+hex[1], 16); g = parseInt(hex[2]+hex[2], 16); b = parseInt(hex[3]+hex[3], 16); }
-            else if(hex.length == 7){ r = parseInt(hex[1]+hex[2], 16); g = parseInt(hex[3]+hex[4], 16); b = parseInt(hex[5]+hex[6], 16); }
-            return `rgba(${r},${g},${b},${alpha})`;
-        }
-        function showStatus(message, duration = 3000) {
-             clearTimeout(statusTimeout);
-             statusMessage.textContent = message;
-             if (duration > 0) {
-                 statusTimeout = setTimeout(() => statusMessage.textContent = '', duration);
-             }
-        }
-
-        // --- Update State from UI ---
-        function updateStateFromUI() {
-            // Circle properties
-            baseCircleColors = circleColorInputs.map(input => input.value);
-            intensity = parseInt(intensitySlider.value, 10);
-            blurAmount = parseInt(blurSlider.value, 10);
-            minRadiusPercent = parseInt(minRadiusSlider.value, 10);
-            maxRadiusPercent = parseInt(maxRadiusSlider.value, 10);
-            maxOpacity = parseFloat(opacitySlider.value);
-            speedMultiplier = parseFloat(speedSlider.value);
-
-            // Background properties
-            const selectedRadio = backgroundTypeRadios.find(radio => radio.checked);
-            backgroundType = selectedRadio ? selectedRadio.value : 'solid';
-            backgroundColor1 = bgColor1Input.value; // Solid color OR first gradient color
-            backgroundColor2 = bgColorGradient2Input.value; // Second gradient color
-
-            // Update display values
-            intensityValue.textContent = intensity;
-            blurValue.textContent = blurAmount;
-            minRadiusValue.textContent = minRadiusPercent;
-            maxRadiusValue.textContent = maxRadiusPercent;
-            opacityValue.textContent = maxOpacity.toFixed(2);
-            speedValue.textContent = speedMultiplier.toFixed(1);
-
-            // Ensure min radius slider doesn't exceed max radius slider visually
-             if (minRadiusPercent > maxRadiusPercent) {
-                 minRadiusSlider.value = maxRadiusPercent;
-                 minRadiusPercent = maxRadiusPercent;
-                 minRadiusValue.textContent = minRadiusPercent;
-             }
-
-            // Toggle visibility of background color pickers
-            solidColorOptionDiv.classList.toggle('hidden', backgroundType !== 'solid');
-            gradientOptionsDiv.classList.toggle('hidden', backgroundType === 'solid');
-        }
-
-        // --- Canvas and Circle Initialization ---
-        function resizeCanvas() {
-            const container = canvas.parentElement;
-            canvasWidth = container.clientWidth;
-            canvasHeight = container.clientHeight;
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
-        }
-
-        function initializeCircles() {
-            // Don't resize here, resizeCanvas handles it separately
-            // Ensure state is up-to-date before initializing
-            // updateStateFromUI(); // State should be updated *before* calling this
-
-            circles = [];
-            const baseDimension = Math.min(canvasWidth, canvasHeight);
-            const minRadiusPx = (minRadiusPercent / 100) * baseDimension;
-            const maxRadiusPx = (maxRadiusPercent / 100) * baseDimension;
-            const baseSpeed = baseDimension * 0.001; // Base speed relative to canvas size
-
-            const finalMinRadiusPx = Math.min(minRadiusPx, maxRadiusPx);
-            const finalMaxRadiusPx = Math.max(minRadiusPx, maxRadiusPx);
-
-            for (let i = 0; i < intensity; i++) {
-                const radius = getRandomFloat(finalMinRadiusPx, finalMaxRadiusPx);
-                const angle = getRandomFloat(0, Math.PI * 2);
-                const currentSpeed = baseSpeed * speedMultiplier; // Apply speed multiplier
-
-                circles.push({
-                    x: getRandomFloat(radius, canvasWidth - radius),
-                    y: getRandomFloat(radius, canvasHeight - radius),
-                    radius: radius,
-                    color: getRandomCircleColor(), // Use circle colors
-                    vx: Math.cos(angle) * currentSpeed,
-                    vy: Math.sin(angle) * currentSpeed,
-                    opacity: getRandomFloat(0.1, maxOpacity) // Use state maxOpacity
-                });
-            }
-             showStatus("");
-        }
-
-        // --- Drawing Functions ---
-        function drawBackground() {
-            ctx.filter = 'none'; // Ensure no filter is active when drawing background
-
-            if (backgroundType === 'solid') {
-                ctx.fillStyle = backgroundColor1;
-            } else if (backgroundType === 'linear') {
-                // Simple top-to-bottom linear gradient
-                const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
-                gradient.addColorStop(0, backgroundColor1);
-                gradient.addColorStop(1, backgroundColor2);
-                ctx.fillStyle = gradient;
-            } else if (backgroundType === 'radial') {
-                // Simple centered radial gradient
-                const centerX = canvasWidth / 2;
-                const centerY = canvasHeight / 2;
-                const outerRadius = Math.sqrt(centerX*centerX + centerY*centerY); // To cover corners
-                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, outerRadius);
-                gradient.addColorStop(0, backgroundColor1);
-                gradient.addColorStop(1, backgroundColor2);
-                ctx.fillStyle = gradient;
-            }
-             // Fill the entire canvas with the selected style
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-        }
-
-        function drawCircles() {
-            // Apply the blur *only* when drawing circles
-            ctx.filter = `blur(${blurAmount}px)`;
-
-            circles.forEach(circle => {
-                ctx.beginPath();
-                ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
-                ctx.fillStyle = hexToRgba(circle.color, circle.opacity);
-                ctx.fill();
-            });
-
-            // Reset filter after drawing circles
-            ctx.filter = 'none';
-        }
-
-
-        // --- Animation Loop ---
-        function updateCirclePositions() {
-            const baseSpeed = Math.min(canvasWidth, canvasHeight) * 0.001;
-
-            circles.forEach(circle => {
-                 // Update velocity based on current speedMultiplier IF NEEDED
-                 // (This is handled more directly in the slider event now)
-
-                circle.x += circle.vx;
-                circle.y += circle.vy;
-
-                // Boundary collision
-                if (circle.x - circle.radius < 0 || circle.x + circle.radius > canvasWidth) {
-                    circle.vx *= -1;
-                    circle.x = Math.max(circle.radius, Math.min(canvasWidth - circle.radius, circle.x));
-                }
-                if (circle.y - circle.radius < 0 || circle.y + circle.radius > canvasHeight) {
-                    circle.vy *= -1;
-                    circle.y = Math.max(circle.radius, Math.min(canvasHeight - circle.radius, circle.y));
-                }
-            });
-        }
-
-
-        function drawFrame() {
-             // 1. Draw the background (solid or gradient)
-             drawBackground();
-
-             // 2. Draw the blurred circles on top
-             drawCircles();
-        }
-
-        function animate() {
-            if (isPaused) return;
-
-            updateCirclePositions(); // Update positions/velocities
-            drawFrame();          // Redraw background and circles
-
-            animationFrameId = requestAnimationFrame(animate);
-        }
-
-        // --- Control Functions ---
-        function playAnimation() {
-            if (animationFrameId === null || isPaused) {
-                 isPaused = false;
-                 playBtn.disabled = true;
-                 pauseBtn.disabled = false;
-                 startRecordBtn.disabled = isRecording; // Can record if not already
-                 downloadWebmBtn.disabled = false; // Enable WebM download button
-                 showStatus("");
-                 animate();
-            }
-        }
-
-        function pauseAnimation() {
-             if (animationFrameId !== null && !isPaused) {
-                 isPaused = true;
-                 cancelAnimationFrame(animationFrameId);
-                 animationFrameId = null; // Clear the ID
-                 playBtn.disabled = false;
-                 pauseBtn.disabled = true;
-                 startRecordBtn.disabled = true; // Cannot record when paused
-                 stopRecordBtn.disabled = !isRecording; // Enable stop if recording
-                 downloadWebmBtn.disabled = true; // Disable WebM download when paused
-                 showStatus("Paused");
-            }
-        }
-
-        function regenerateArt() {
-            const wasPaused = isPaused; // Store current pause state
-            pauseAnimation();       // Ensure animation is stopped
-            updateStateFromUI();    // Get the latest settings from controls
-            // No need to resize here, handled by window resize event
-            initializeCircles();    // Create new circles based on *new* state
-            drawFrame();            // Draw the initial frame of the new art
-
-            // Reset controls based on whether it was paused before regenerating
-            playBtn.disabled = false;
-            pauseBtn.disabled = true;
-            startRecordBtn.disabled = true; // Always start paused after regen
-            stopRecordBtn.disabled = true; // Can't be recording after regen
-            downloadWebmBtn.disabled = true; // Disabled because paused
-            isPaused = true; // Ensure state reflects paused
-
-            if (isRecording) {
-                // If somehow recording during regenerate (shouldn't happen ideally), stop it
-                stopRecording();
-                showStatus("Recording stopped. New art generated.");
-            } else {
-                showStatus("New art generated. Press Play.");
-            }
-        }
-
-        // --- Media Recorder Functions ---
-        function handleDataAvailable(event) {
-            if (event.data && event.data.size > 0) {
-                recordedChunks.push(event.data);
-            }
-        }
-
-        function handleStopRecording() {
-            isRecording = false;
-            recordingIndicator.classList.add('hidden');
-            showStatus('Processing video...', 0);
-
-            const blob = new Blob(recordedChunks, { type: MimeType });
-            const url = URL.createObjectURL(blob);
-
-            const link = document.createElement('a');
-            link.href = url;
-            // Use WEBM extension
-            link.download = `blur-art-animation.webm`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-
-            recordedChunks = [];
-            mediaRecorder = null;
-
-            // Update UI
-            startRecordBtn.disabled = isPaused; // Can record again if playing
-            stopRecordBtn.disabled = true;
-            regenerateBtn.disabled = false;
-            downloadPngBtn.disabled = false;
-            downloadWebmBtn.disabled = isPaused; // Enable if playing
-             playBtn.disabled = isPaused; // Re-enable play if needed
-             pauseBtn.disabled = !isPaused; // Re-enable pause if needed
-
-            showStatus('WEBM Video ready!');
-        }
-
-        function startRecording() {
-            if (!window.MediaRecorder || !MediaRecorder.isTypeSupported(MimeType)) {
-                 showStatus(`Error: Recording (${MimeType}) not supported.`);
-                 console.error('MediaRecorder API or MimeType not supported.');
-                 return;
-            }
-            if (isRecording || isPaused) return; // Don't record if already recording or paused
-
-            isRecording = true;
-            recordedChunks = [];
-            recordingIndicator.classList.remove('hidden');
-            showStatus('Recording...', 0);
-
-            // Disable controls during recording
-            startRecordBtn.disabled = true;
-            stopRecordBtn.disabled = false;
-            regenerateBtn.disabled = true;
-            downloadPngBtn.disabled = true;
-            downloadWebmBtn.disabled = true; // Disable webm download during recording itself
-            playBtn.disabled = true; // Can't press play again while recording
-            pauseBtn.disabled = false; // Allow pausing the animation (stops recording stream implicitly)
-
-            try {
-                 const stream = canvas.captureStream(30); // 30 FPS
-                 mediaRecorder = new MediaRecorder(stream, { mimeType: MimeType });
-                 mediaRecorder.ondataavailable = handleDataAvailable;
-                 mediaRecorder.onstop = handleStopRecording;
-                 mediaRecorder.onerror = (event) => {
-                    console.error('MediaRecorder error:', event.error);
-                    showStatus(`Recording Error: ${event.error.name}`);
-                    // Reset state on error
-                    isRecording = false;
-                    recordingIndicator.classList.add('hidden');
-                    startRecordBtn.disabled = isPaused;
-                    stopRecordBtn.disabled = true;
-                    regenerateBtn.disabled = false;
-                    downloadPngBtn.disabled = false;
-                    downloadWebmBtn.disabled = isPaused;
-                    playBtn.disabled = isPaused;
-                    pauseBtn.disabled = !isPaused;
-                 };
-                 mediaRecorder.start();
-            } catch (error) {
-                 console.error("Error starting MediaRecorder:", error);
-                 showStatus(`Error: ${error.message}`);
-                 // Reset state
-                 isRecording = false;
-                 recordingIndicator.classList.add('hidden');
-                 startRecordBtn.disabled = isPaused;
-                 stopRecordBtn.disabled = true;
-                 regenerateBtn.disabled = false;
-                 downloadPngBtn.disabled = false;
-                 downloadWebmBtn.disabled = isPaused;
-                 playBtn.disabled = isPaused;
-                 pauseBtn.disabled = !isPaused;
-            }
-        }
-
-        function stopRecording() {
-            if (mediaRecorder && isRecording) {
-                mediaRecorder.stop(); // Triggers onstop event handler
-                showStatus('Stopping recording...');
-                // Button states will be updated in handleStopRecording
-            }
-        }
-
-
-        // --- Event Listeners ---
-        playBtn.addEventListener('click', playAnimation);
-        pauseBtn.addEventListener('click', pauseAnimation);
-        regenerateBtn.addEventListener('click', regenerateArt);
-        startRecordBtn.addEventListener('click', startRecording);
-        stopRecordBtn.addEventListener('click', stopRecording);
-
-        // PNG Download Listener
-        downloadPngBtn.addEventListener('click', () => {
-            // Ensure the latest frame (including background) is drawn if paused
-            if (isPaused) drawFrame();
-
-            const link = document.createElement('a');
-            link.download = 'blur-art-frame.png';
-            // Convert canvas content (including drawn background) to PNG Data URL
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            showStatus("PNG frame downloaded");
-        });
-
-        // WebM Download Listener (acts as a duplicate trigger for stop recording if running)
-        downloadWebmBtn.addEventListener('click', () => {
-            if (isRecording) {
-                stopRecording(); // Stop recording if the button is clicked
-            } else {
-                 showStatus("Start recording first to download WEBM.");
-            }
-        });
-
-        // Combined listener for sliders, colors, and background controls
-        const allControls = [
-             intensitySlider, blurSlider, minRadiusSlider, maxRadiusSlider, opacitySlider, speedSlider,
-             ...circleColorInputs, ...backgroundTypeRadios, bgColor1Input, bgColorGradient1Input, bgColorGradient2Input
-        ];
-
-        allControls.forEach(input => {
-            input.addEventListener('input', (event) => {
-                 const previousSpeed = speedMultiplier; // Store for speed adjustments
-                 const previousBgType = backgroundType; // Store for background type change check
-                 updateStateFromUI(); // Update state variables based on ALL controls
-
-                 const changedInput = event.target;
-
-                 // Controls that require full regeneration
-                 const requiresRegen = [
-                     intensitySlider, minRadiusSlider, maxRadiusSlider, opacitySlider,
-                     bgColor1Input, bgColorGradient1Input, bgColorGradient2Input,
-                     ...circleColorInputs // Circle colors also require regen
-                 ].includes(changedInput);
-
-                 // Check if background *type* changed
-                 const backgroundTypeChanged = backgroundTypeRadios.includes(changedInput) && backgroundType !== previousBgType;
-
-                 if (requiresRegen || backgroundTypeChanged) {
-                     // Regenerate immediately to reflect changes that affect circle setup or background type/colors
-                     regenerateArt(); // This handles pausing, re-init, redraw, and keeps it paused
-                     showStatus("Settings applied. Press Play."); // Give clear feedback
-                 } else if (changedInput === speedSlider) {
-                     // Speed slider: Update circle velocities live
-                     const baseDimension = Math.min(canvasWidth, canvasHeight);
-                     const baseSpeed = baseDimension * 0.001;
-
-                     circles.forEach(circle => {
-                         const currentMagnitude = Math.sqrt(circle.vx * circle.vx + circle.vy * circle.vy);
-                         const targetSpeed = baseSpeed * speedMultiplier;
-
-                         if (currentMagnitude > 0.0001) { // Avoid division by zero/tiny values
-                             const scaleFactor = targetSpeed / currentMagnitude;
-                             circle.vx *= scaleFactor;
-                             circle.vy *= scaleFactor;
-                         } else {
-                             // Assign a new velocity if it was somehow zero
-                             const angle = getRandomFloat(0, Math.PI * 2);
-                             circle.vx = Math.cos(angle) * targetSpeed;
-                             circle.vy = Math.sin(angle) * targetSpeed;
-                         }
-                     });
-                     showStatus(""); // Clear status message
-                 } else if (changedInput === blurSlider) {
-                     // Blur slider: Applied live in drawFrame. If paused, redraw to show change.
-                     if (isPaused) {
-                         drawFrame(); // Redraw immediately with the new blur value
-                     }
-                     showStatus(""); // Clear status message
-                 }
-                 // No specific action needed for backgroundTypeRadios change IF it didn't trigger regen (handled above)
-            });
-        });
-
-
-        // Debounced resize handler
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                const wasPaused = isPaused;
-                const wasRecording = isRecording; // Check if recording before resize
-
-                 if (wasRecording) {
-                     stopRecording(); // Stop recording before resize/regen
-                     showStatus("Resized - Recording stopped.", 5000);
-                 } else {
-                     showStatus("Resizing...", 1000);
-                 }
-
-                pauseAnimation(); // Pause during resize logic
-                updateStateFromUI(); // Read current control values
-                resizeCanvas();      // Resize canvas dimensions
-                initializeCircles(); // Reinitialize circles for new size
-                drawFrame();         // Draw initial frame at new size
-
-                // Reset controls and state after resize
-                 isPaused = true; // Always start paused after resize
-                 playBtn.disabled = false;
-                 pauseBtn.disabled = true;
-                 startRecordBtn.disabled = true; // Can't record paused
-                 stopRecordBtn.disabled = true;
-                 downloadWebmBtn.disabled = true; // Disabled because paused
-
-                 if (!wasRecording) { // Only show 'Press Play' if not interrupted recording
-                    showStatus("Resized. Press Play.");
-                 }
-
-            }, 250);
-        });
-
-
-        // --- Initial Setup ---
-        window.onload = () => {
-             updateStateFromUI(); // Read initial values, set bg visibility
-             resizeCanvas();      // Set initial canvas size
-             initializeCircles(); // Create the first set of circles
-             drawFrame();         // Draw the initial static frame (with background)
-
-             // Start paused
-             isPaused = true;
-             playBtn.disabled = false;
-             pauseBtn.disabled = true;
-             startRecordBtn.disabled = true; // Can't record when paused
-             stopRecordBtn.disabled = true;
-             downloadWebmBtn.disabled = true; // Can't download video when paused
-             showStatus("Ready. Press Play.");
-        };
-
-    </script>
-
-</body>
-</html>
+2025 Trends: Brand Style Guideline
+Created by Poppy Marketing and Consulting
+	•	Rococo Revival
+	•	Primary Play
+	•	Terra Futura
+	•	Cherry Coded
+	•	Castlecore
+	•	Moto Boho
+	•	Aura-Inspired
+	•	Sea Witchery
+Rococo Revival Online
+Trend Description
+Rococo Revival Online reimagines the opulent 18th-century Rococo era for the digital age. This trend celebrates intricate details, layered textures, and classical typefaces to evoke elegance and nostalgia in digital spaces. With its soft pastels, gilded accents, and ornate flourishes, Rococo Revival offers a refreshing alternative to minimalism, allowing brands to create spaces that feel personal, unique, and unapologetically stylish while maintaining a connection to historical luxury.
+Styling Guidelines
+Color Palette
+Blush Pink
+Sky Blue
+Mint Green
+Gold
+Ivory
+Cream
+Use pastels for backgrounds and large areas; reserve gold for accents, borders, and interactive elements.
+Typography
+	•	Headings: Ornate serif fonts like Baskerville, Caslon, or Didot
+	•	Body Text: Clean, readable serif fonts like Garamond or Georgia
+	•	Decorative Elements: Script fonts like Snell Roundhand or Lavanderia for accents
+	•	Hierarchy: Create contrast between ornate display fonts and more readable text fonts
+Textures & Patterns
+	•	Background Textures: Subtle paper textures, marble patterns, or damask prints
+	•	Decorative Elements: Floral motifs, scrollwork, shell patterns
+	•	Borders: Gilded frames, scalloped edges, ornamental dividers
+	•	Layering: Overlay textures with transparency to create depth without overwhelming content
+Composition
+	•	Layout: Asymmetrical balance with ornate framing elements
+	•	Spacing: Generous white space to balance ornate elements
+	•	Structure: Frame content with decorative borders and flourishes
+	•	Movement: Create visual flow with curved lines and organic shapes
+Example Use Cases
+Luxury E-commerce
+Perfect for high-end fashion, jewelry, or home décor brands seeking to convey heritage and craftsmanship. Implement gilded product frames, ornate category dividers, and classical typography to elevate the shopping experience.
+Event Planning & Wedding Services
+Ideal for wedding planners, event coordinators, and invitation designers. The ornate aesthetics naturally complement celebration-themed content and convey a sense of special occasion.
+Cultural Institutions
+Museums, galleries, and historical organizations can use Rococo Revival to create digital experiences that echo their physical spaces and historical collections.
+Beauty & Cosmetics
+Luxury beauty brands can leverage the feminine, elegant aspects of Rococo Revival to create packaging and digital experiences that feel indulgent and timeless.
+Pro Tips
+Balance Is Key
+Tip: Pair ornate elements with clean, minimal components to prevent visual overwhelm. For example, use an ornate header with simple body text, or decorative frames around minimal content.
+Why It Works: This creates breathing room and helps users focus on important information while still enjoying the decorative elements.
+Modern Adaptation
+Tip: Incorporate subtle animations like gentle hover effects on gilded elements or slow-reveal transitions for ornate details.
+Why It Works: This brings historical elements into the digital age, creating an engaging experience that honors tradition while embracing modern capabilities.
+Responsive Considerations
+Tip: Design simplified versions of ornate elements for mobile displays, focusing on key decorative touches rather than trying to maintain all details.
+Why It Works: Ensures the aesthetic translates across devices without sacrificing performance or usability.
+Primary Play in UI Design
+Trend Description
+Primary Play in UI Design embraces bold, vibrant primary colors to create playful, approachable digital interfaces that resonate particularly with Gen Z audiences. This trend moves away from muted palettes and minimalist aesthetics, instead celebrating the energy and accessibility that comes from using fundamental colors in their purest form. By incorporating these vibrant hues with playful elements and intuitive layouts, Primary Play creates digital experiences that feel both nostalgic and fresh, inviting users to engage with content in a more emotional and direct way.
+Styling Guidelines
+Color Palette
+Bold Red
+Bold Blue
+Bold Yellow
+Bright Green
+Orange
+Purple
+Use primaries for key interactive elements, CTAs, and focal points; balance with neutral backgrounds to prevent visual fatigue.
+Typography
+	•	Headings: Bold, geometric sans-serif fonts like Futura, Montserrat, or Poppins
+	•	Body Text: Clean, highly readable sans-serif fonts like Inter or Open Sans
+	•	Accent Text: Playful, rounded fonts like Quicksand or Comfortaa for special elements
+	•	Hierarchy: Create clear contrast between bold headlines and readable body text
+Textures & Patterns
+	•	Background Elements: Simple geometric shapes, color blocks, or subtle grid patterns
+	•	Decorative Elements: Hand-drawn illustrations, doodles, or abstract shapes
+	•	Interactive Elements: Soft shadows, subtle gradients, or color overlays
+	•	Visual Noise: Confetti patterns, polka dots, or playful "sprinkles" as accents
+Composition
+	•	Layout: Grid-based structures with playful asymmetrical elements
+	•	Spacing: Generous whitespace to let bold colors breathe
+	•	Structure: Clear visual hierarchy with emphasis on important interactive elements
+	•	Movement: Incorporate playful micro-animations and transitions between states
+Example Use Cases
+Educational Platforms
+Perfect for learning applications, educational websites, and children's digital products. The approachable, playful aesthetic creates an engaging environment that encourages exploration and reduces learning anxiety.
+Fintech for Young Adults
+Financial services targeting Gen Z can use Primary Play to make traditionally intimidating financial concepts more approachable and engaging, helping younger users feel comfortable with money management.
+E-commerce for Youth Brands
+Clothing, accessories, and lifestyle brands targeting younger demographics can leverage this aesthetic to create shopping experiences that feel energetic and authentic.
+Social Impact Organizations
+Nonprofits and cause-driven organizations can use Primary Play to create approachable, optimistic digital experiences that inspire action and community engagement.
+Pro Tips
+Color Psychology Matters
+Tip: Use red for urgent calls-to-action, blue for trustworthy information sections, and yellow for optimistic messaging or highlights.
+Why It Works: Leverages innate psychological responses to primary colors while maintaining design cohesion.
+Accessibility First
+Tip: Despite using vibr (Content truncated due to size limit. Use line ranges to read in chunks)
